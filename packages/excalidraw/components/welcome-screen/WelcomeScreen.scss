@@ -217,7 +217,7 @@
 
   .welcome-screen-menu-item:active {
     background: var(--button-hover-bg);
-    border-color: var(--color-brand-active);
+    border-color: #000000;
 
     .welcome-screen-menu-item__shortcut {
       color: var(--color-gray-50);
@@ -235,6 +235,10 @@
           color: var(--color-promo) !important;
         }
       }
+    }
+
+    @at-root .excalidraw.theme--dark & {
+      border-color: #ffffff;
     }
   }
 

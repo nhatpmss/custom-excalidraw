@@ -1,5 +1,4 @@
 import React from "react";
-import { PlusPromoIcon } from "../../packages/excalidraw/components/icons";
 import { useI18n } from "../../packages/excalidraw/i18n";
 import { WelcomeScreen } from "../../packages/excalidraw/index";
 import { isExcalidrawPlusSignedUser } from "../app_constants";
@@ -54,17 +53,6 @@ export const AppWelcomeScreen: React.FC<{
             <WelcomeScreen.Center.MenuItemLiveCollaborationTrigger
               onSelect={() => props.onCollabDialogOpen()}
             />
-          )}
-          {!isExcalidrawPlusSignedUser && (
-            <WelcomeScreen.Center.MenuItemLink
-              href={`${
-                import.meta.env.VITE_APP_PLUS_LP
-              }/plus?utm_source=excalidraw&utm_medium=app&utm_content=welcomeScreenGuest`}
-              shortcut={null}
-              icon={PlusPromoIcon}
-            >
-              Try Excalidraw Plus!
-            </WelcomeScreen.Center.MenuItemLink>
           )}
         </WelcomeScreen.Center.Menu>
       </WelcomeScreen.Center>

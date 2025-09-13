@@ -11,7 +11,7 @@
     .ToolIcon_type_radio,
     .ToolIcon_type_checkbox {
       &:checked + .ToolIcon__icon {
-        --icon-fill-color: var(--color-on-primary-container);
+        --icon-fill-color: #000000;
 
         svg {
           fill: var(--icon-fill-color);
@@ -24,10 +24,48 @@
   .ToolIcon_type_checkbox {
     &:checked + .ToolIcon__icon {
       background: var(--color-surface-primary-container);
-      --keybinding-color: var(--color-on-primary-container);
+      --keybinding-color: #000000;
 
       svg {
-        color: var(--color-on-primary-container);
+        color: #000000;
+      }
+    }
+  }
+
+  // Dark mode overrides for selected icons
+  @at-root .excalidraw.theme--dark & {
+    &.fillable {
+      .ToolIcon_type_radio,
+      .ToolIcon_type_checkbox {
+        &:checked + .ToolIcon__icon {
+          --icon-fill-color: #ffffff;
+
+          svg {
+            fill: var(--icon-fill-color);
+          }
+        }
+      }
+    }
+
+    .ToolIcon_type_radio,
+    .ToolIcon_type_checkbox {
+      &:checked + .ToolIcon__icon {
+        --keybinding-color: #ffffff;
+
+        svg {
+          color: #ffffff;
+        }
+      }
+    }
+  }
+
+  // Dark mode override for active state
+  @at-root .excalidraw.theme--dark & {
+    .ToolIcon__icon {
+      &:active {
+        svg {
+          color: #ffffff;
+        }
       }
     }
   }
@@ -47,7 +85,7 @@
       border: 1px solid var(--button-active-border);
 
       svg {
-        color: var(--color-on-primary-container);
+        color: #000000;
       }
     }
   }
@@ -110,7 +148,16 @@
     }
 
     svg {
-      color: var(--button-color, var(--color-on-primary-container));
+      color: #000000;
+    }
+  }
+
+  // Dark mode override for active button
+  @at-root .excalidraw.theme--dark & {
+    &.active {
+      svg {
+        color: #ffffff;
+      }
     }
   }
 }

@@ -10,7 +10,6 @@
     "module": "ESNext",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "jsx": "react-jsx",
-    "ignoreDeprecations": "6.0"
+    "jsx": "react-jsx"
   }
 }

@@ -167,13 +167,13 @@ const renderSingleLinearPoint = (
   isSelected: boolean,
   isPhantomPoint = false,
 ) => {
-  context.strokeStyle = "#5e5ad8";
+  context.strokeStyle = "#000000";
   context.setLineDash([]);
   context.fillStyle = "rgba(255, 255, 255, 0.9)";
   if (isSelected) {
-    context.fillStyle = "rgba(134, 131, 226, 0.9)";
+    context.fillStyle = "rgba(0, 0, 0, 0.9)";
   } else if (isPhantomPoint) {
-    context.fillStyle = "rgba(177, 151, 252, 0.7)";
+    context.fillStyle = "rgba(128, 128, 128, 0.7)";
   }
 
   fillCircle(
