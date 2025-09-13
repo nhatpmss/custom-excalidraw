@@ -23,6 +23,7 @@ import { capitalizeString, isShallowEqual } from "../utils";
 import { SelectedShapeActions, ShapesSwitcher } from "./Actions";
 import { ErrorDialog } from "./ErrorDialog";
 import { ImageExportDialog } from "./ImageExportDialog";
+import { EditHistoryDialog } from "./EditHistoryDialog";
 import { FixedSideContainer } from "./FixedSideContainer";
 import { HintViewer } from "./HintViewer";
 import { Island } from "./Island";
@@ -38,6 +39,7 @@ import { JSONExportDialog } from "./JSONExportDialog";
 import { PenModeButton } from "./PenModeButton";
 import { trackEvent } from "../analytics";
 import { useDevice } from "./App";
+import { restore } from "../data/restore";
 import { Stats } from "./Stats";
 import { actionToggleStats } from "../actions/actionToggleStats";
 import Footer from "./footer/Footer";
@@ -182,6 +184,51 @@ const LayerUI = ({
         onExportImage={onExportImage}
         onCloseRequest={() => setAppState({ openDialog: null })}
         name={app.getName()}
+      />
+    );
+  };
+
+  const renderEditHistoryDialog = () => {
+    if (appState.openDialog?.name !== "editHistory") {
+      return null;
+    }
+
+    const handleLoadVersion = (data: string, versionId: string) => {
+      try {
+        const parsedData = JSON.parse(data);
+        const restored = restore(parsedData, appState, elements);
+        
+        // Update elements through scene
+        app.scene.replaceAllElements(restored.elements);
+        
+        // Update app state
+        setAppState({
+          ...restored.appState,
+          openDialog: null,
+        });
+        
+        // Update files
+        Object.assign(app.files, restored.files);
+        
+        // Set current editing version
+        (app as any).setCurrentEditingVersion?.(versionId);
+        
+      } catch (error) {
+        console.error("Error loading edit history version:", error);
+        setAppState({
+          ...appState,
+          errorMessage: "Failed to load version from history",
+          openDialog: null,
+        });
+      }
+    };
+
+    return (
+      <EditHistoryDialog
+        appState={appState}
+        setAppState={setAppState}
+        onLoadVersion={handleLoadVersion}
+        app={app}
       />
     );
   };
@@ -456,6 +503,7 @@ const LayerUI = ({
       <tunnels.OverwriteConfirmDialogTunnel.Out />
       {renderImageExportDialog()}
       {renderJSONExportDialog()}
+      {renderEditHistoryDialog()}
       {appState.pasteDialog.shown && (
         <PasteChartDialog
           setAppState={setAppState}

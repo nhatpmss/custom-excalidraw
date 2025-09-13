@@ -8,11 +8,13 @@ import {
 } from "../App";
 import {
   boltIcon,
+  clockIcon,
   ExportIcon,
   ExportImageIcon,
   HelpIcon,
   LoadIcon,
   MoonIcon,
+  PlusIcon,
   save,
   SunIcon,
   TrashIcon,
@@ -23,8 +25,11 @@ import DropdownMenuItem from "../dropdownMenu/DropdownMenuItem";
 import DropdownMenuItemLink from "../dropdownMenu/DropdownMenuItemLink";
 import {
   actionClearCanvas,
+  actionCreateNew,
   actionLoadScene,
   actionSaveToActiveFile,
+  actionSaveToHistory,
+  actionSaveSnapshot,
   actionShortcuts,
   actionToggleTheme,
 } from "../../actions";
@@ -91,7 +96,7 @@ export const SaveToActiveFile = () => {
 
   return (
     <DropdownMenuItem
-      shortcut={getShortcutFromShortcutName("saveScene")}
+      shortcut={getShortcutFromShortcutName("saveToActiveFile")}
       data-testid="save-button"
       onSelect={() => actionManager.executeAction(actionSaveToActiveFile)}
       icon={save}
@@ -314,3 +319,85 @@ export const LiveCollaborationTrigger = ({
 };
 
 LiveCollaborationTrigger.displayName = "LiveCollaborationTrigger";
+
+export const EditHistory = () => {
+  const { t } = useI18n();
+  const setAppState = useExcalidrawSetAppState();
+
+  return (
+    <DropdownMenuItem
+      icon={clockIcon}
+      onSelect={() => setAppState({ openDialog: { name: "editHistory" } })}
+      data-testid="edit-history-button"
+      aria-label="Edit History"
+    >
+      Edit History
+    </DropdownMenuItem>
+  );
+};
+EditHistory.displayName = "EditHistory";
+
+export const SaveToHistory = () => {
+  const { t } = useI18n();
+  const actionManager = useExcalidrawActionManager();
+  const elements = useExcalidrawElements();
+
+  if (!actionManager.isActionEnabled(actionSaveSnapshot)) {
+    return null;
+  }
+
+  return (
+    <DropdownMenuItem
+      icon={save}
+      onSelect={() => actionManager.executeAction(actionSaveSnapshot)}
+      data-testid="save-to-history-button"
+      aria-label={t("labels.saveSnapshot")}
+    >
+      {t("labels.saveSnapshot")}
+    </DropdownMenuItem>
+  );
+};
+SaveToHistory.displayName = "SaveToHistory";
+
+export const CreateNew = () => {
+  const { t } = useI18n();
+  const actionManager = useExcalidrawActionManager();
+  const elements = useExcalidrawElements();
+
+  if (!actionManager.isActionEnabled(actionCreateNew)) {
+    return null;
+  }
+
+  const handleSelect = async () => {
+    if (
+      !elements.length ||
+      (await openConfirmModal({
+        title: t("overwriteConfirm.modal.createNew.title"),
+        actionLabel: t("overwriteConfirm.modal.createNew.button"),
+        color: "warning",
+        description: (
+          <Trans
+            i18nKey="overwriteConfirm.modal.createNew.description"
+            bold={(text) => <strong>{text}</strong>}
+            br={() => <br />}
+          />
+        ),
+      }))
+    ) {
+      actionManager.executeAction(actionCreateNew);
+    }
+  };
+
+  return (
+    <DropdownMenuItem
+      icon={PlusIcon}
+      onSelect={handleSelect}
+      data-testid="create-new-button"
+      shortcut={getShortcutFromShortcutName("createNew")}
+      aria-label={t("labels.createNew")}
+    >
+      {t("labels.createNew")}
+    </DropdownMenuItem>
+  );
+};
+CreateNew.displayName = "CreateNew";

@@ -75,6 +75,9 @@
     "canvasBackground": "Canvas background",
     "drawingCanvas": "Drawing canvas",
     "clearCanvas": "Clear canvas",
+    "createNew": "Create new",
+    "saveToHistory": "Save to history",
+    "saveSnapshot": "Save snapshot",
     "layers": "Layers",
     "actions": "Actions",
     "language": "Language",
@@ -524,6 +527,11 @@
         "title": "Load from link",
         "button": "Replace my content",
         "description": "Loading external drawing will <bold>replace your existing content</bold>.<br></br>You can back up your drawing first by using one of the options below."
+      },
+      "createNew": {
+        "title": "Create new drawing",
+        "button": "Create new",
+        "description": "Creating a new drawing will <bold>clear your existing content</bold>.<br></br>You can back up your drawing first using one of the options below."
       }
     }
   },

@@ -10,6 +10,8 @@ export type ShortcutName =
       | "toggleTheme"
       | "loadScene"
       | "clearCanvas"
+      | "createNew"
+      | "saveToHistory"
       | "cut"
       | "copy"
       | "paste"
@@ -49,13 +51,13 @@ export type ShortcutName =
       | "saveToActiveFile"
       | "toggleShortcuts"
     >
-  | "saveScene"
   | "imageExport"
   | "commandPalette";
 
 const shortcutMap: Record<ShortcutName, string[]> = {
   toggleTheme: [getShortcutKey("Shift+Alt+D")],
-  saveScene: [getShortcutKey("CtrlOrCmd+S")],
+  saveToHistory: [getShortcutKey("CtrlOrCmd+S")],
+  createNew: [getShortcutKey("CtrlOrCmd+P")],
   loadScene: [getShortcutKey("CtrlOrCmd+O")],
   clearCanvas: [getShortcutKey("CtrlOrCmd+Delete")],
   imageExport: [getShortcutKey("CtrlOrCmd+Shift+E")],
@@ -109,8 +111,8 @@ const shortcutMap: Record<ShortcutName, string[]> = {
   toggleEraserTool: [getShortcutKey("E")],
   toggleHandTool: [getShortcutKey("H")],
   setFrameAsActiveTool: [getShortcutKey("F")],
-  saveFileToDisk: [getShortcutKey("CtrlOrCmd+S")],
-  saveToActiveFile: [getShortcutKey("CtrlOrCmd+S")],
+  saveFileToDisk: [getShortcutKey("CtrlOrCmd+Shift+S")],
+  saveToActiveFile: [getShortcutKey("CtrlOrCmd+Shift+S")],
   toggleShortcuts: [getShortcutKey("?")],
 };
 

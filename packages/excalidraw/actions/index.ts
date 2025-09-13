@@ -23,6 +23,9 @@ export {
 export {
   actionChangeViewBackgroundColor,
   actionClearCanvas,
+  actionCreateNew,
+  actionSaveToHistory,
+  actionSaveSnapshot,
   actionZoomIn,
   actionZoomOut,
   actionResetZoom,

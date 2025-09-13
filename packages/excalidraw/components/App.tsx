@@ -14,6 +14,7 @@ import {
   actionCopyAsSvg,
   copyText,
   actionCopyStyles,
+  actionCreateNew,
   actionCut,
   actionDeleteSelected,
   actionDuplicateSelection,
@@ -92,6 +93,7 @@ import {
   supportsResizeObserver,
 } from "../constants";
 import { ExportedElements, exportCanvas, loadFromBlob } from "../data";
+import { serializeAsJSON } from "../data/json";
 import Library, { distributeLibraryItemsOnSquareGrid } from "../data/library";
 import { restore, restoreElements } from "../data/restore";
 import {
@@ -557,6 +559,16 @@ class App extends React.Component<AppProps, AppState> {
   private initializedEmbeds = new Set<ExcalidrawIframeLikeElement["id"]>();
 
   private elementsPendingErasure: ElementsPendingErasure = new Set();
+
+  // Edit History Auto-save
+  private autoSaveTimeout: NodeJS.Timeout | null = null;
+  private lastSavedData: string = "";
+  private readonly AUTO_SAVE_DELAY = 5000; // 5 seconds
+  private readonly MAX_VERSIONS = 10;
+  private readonly EDIT_HISTORY_KEY = "excalidraw-edit-history";
+  private readonly CURRENT_DOCUMENT_KEY = "excalidraw-current-document";
+  private hasUnsavedChanges: boolean = false;
+  private currentEditingVersionId: string | null = null;
 
   hitLinkElement?: NonDeletedExcalidrawElement;
   lastPointerDownEvent: React.PointerEvent<HTMLElement> | null = null;
@@ -2116,6 +2128,13 @@ class App extends React.Component<AppProps, AppState> {
     ShapeCache.destroy();
     SnapCache.destroy();
     clearTimeout(touchTimeout);
+    
+    // Cleanup auto-save timeout
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+      this.autoSaveTimeout = null;
+    }
+    
     isSomeElementSelected.clearCache();
     selectGroupsForSelectedElements.clearCache();
     touchTimeout = 0;
@@ -2427,6 +2446,9 @@ class App extends React.Component<AppProps, AppState> {
     if (!this.state.isLoading) {
       this.props.onChange?.(elements, this.state, this.files);
       this.onChangeEmitter.trigger(elements, this.state, this.files);
+      
+      // Schedule auto-save for edit history
+      this.scheduleAutoSave();
     }
   }
 
@@ -2524,6 +2546,250 @@ class App extends React.Component<AppProps, AppState> {
         activeEmbeddable: null,
       });
     }
+  };
+
+  // Auto-save current working document (not history)
+  private autoSaveCurrentDocument = () => {
+    try {
+      const elements = this.scene.getNonDeletedElements();
+      
+      // Don't auto-save if canvas is empty
+      if (elements.length === 0) {
+        this.hasUnsavedChanges = false;
+        return;
+      }
+      
+      // Create scene data
+      const sceneData = {
+        elements,
+        appState: {
+          ...this.state,
+          // Remove UI-specific state that shouldn't be saved
+          openDialog: null,
+          openMenu: null,
+          openPopup: null,
+          openSidebar: null,
+          isLoading: false,
+          errorMessage: null,
+          toast: null,
+        },
+        files: this.files,
+      };
+
+      const serialized = serializeAsJSON(
+        sceneData.elements,
+        sceneData.appState,
+        sceneData.files,
+        "local"
+      );
+
+      // Don't save if nothing changed
+      if (serialized === this.lastSavedData) {
+        return;
+      }
+
+      this.lastSavedData = serialized;
+
+      // Save current document (not to history)
+      const currentDocument = {
+        id: "current",
+        name: this.state.name || "Untitled",
+        timestamp: Date.now(),
+        data: serialized,
+        isCurrentDocument: true,
+      };
+
+      localStorage.setItem(this.CURRENT_DOCUMENT_KEY, JSON.stringify(currentDocument));
+      this.hasUnsavedChanges = false;
+
+      console.log("Auto-saved current document");
+    } catch (error) {
+      console.error("Error auto-saving current document:", error);
+    }
+  };
+
+  // Save or update current working version (Cmd+S behavior)
+  public saveOrUpdateCurrentVersion = () => {
+    try {
+      const elements = this.scene.getNonDeletedElements();
+      
+      // Create scene data
+      const sceneData = {
+        elements,
+        appState: {
+          ...this.state,
+          openDialog: null,
+          openMenu: null,
+          openPopup: null,
+          openSidebar: null,
+          isLoading: false,
+          errorMessage: null,
+          toast: null,
+        },
+        files: this.files,
+      };
+
+      const serialized = serializeAsJSON(
+        sceneData.elements,
+        sceneData.appState,
+        sceneData.files,
+        "local"
+      );
+
+      // Load existing versions
+      const existingVersions = JSON.parse(
+        localStorage.getItem(this.EDIT_HISTORY_KEY) || "[]"
+      );
+
+      // Find current working version (has isCurrentVersion flag)
+      const currentVersionIndex = existingVersions.findIndex((v: any) => v.isCurrentVersion);
+      
+      if (currentVersionIndex >= 0) {
+        // Update existing current version
+        const updatedVersion = {
+          ...existingVersions[currentVersionIndex],
+          data: serialized,
+          timestamp: Date.now(),
+          name: this.state.name || "Untitled", // Update name if changed
+        };
+        
+        existingVersions[currentVersionIndex] = updatedVersion;
+        localStorage.setItem(this.EDIT_HISTORY_KEY, JSON.stringify(existingVersions));
+        
+        console.log("Updated current version:", updatedVersion.name);
+        return { success: true, updated: true };
+      } else {
+        // Create new current version
+        if (existingVersions.length >= this.MAX_VERSIONS) {
+          this.setToast({
+            message: `Edit history limit reached (${this.MAX_VERSIONS} versions). Please delete some older versions to continue saving.`,
+            closable: true,
+            duration: 8000,
+          });
+          return { success: false, updated: false };
+        }
+
+        const newVersion = {
+          id: Date.now().toString(),
+          name: this.state.name || "Untitled",
+          timestamp: Date.now(),
+          data: serialized,
+          isCurrentVersion: true, // Mark as current working version
+        };
+
+        // Add to beginning of array (newest first)
+        const updatedVersions = [newVersion, ...existingVersions];
+        localStorage.setItem(this.EDIT_HISTORY_KEY, JSON.stringify(updatedVersions));
+
+        console.log("Created new current version:", newVersion.name);
+        return { success: true, updated: false };
+      }
+    } catch (error) {
+      console.error("Error saving/updating current version:", error);
+      return { success: false, updated: false };
+    }
+  };
+
+  // Set current editing version (called when loading from history)
+  public setCurrentEditingVersion = (versionId: string | null) => {
+    this.currentEditingVersionId = versionId;
+  };
+
+  // Check if a version is currently being edited
+  public isCurrentlyEditingVersion = (versionId: string) => {
+    return this.currentEditingVersionId === versionId;
+  };
+
+  // Handle deletion of currently editing version
+  public handleDeleteCurrentEditingVersion = () => {
+    if (this.currentEditingVersionId) {
+      // Clear canvas and return to welcome page
+      this.resetScene();
+      this.currentEditingVersionId = null;
+      
+      this.setToast({
+        message: "Returned to welcome page - deleted version was being edited",
+        duration: 4000,
+      });
+    }
+  };
+
+  // Save version to Edit History (manual save - creates snapshot)
+  public saveVersionToHistory = (customName?: string) => {
+    try {
+      const elements = this.scene.getNonDeletedElements();
+      
+      // Create scene data
+      const sceneData = {
+        elements,
+        appState: {
+          ...this.state,
+          openDialog: null,
+          openMenu: null,
+          openPopup: null,
+          openSidebar: null,
+          isLoading: false,
+          errorMessage: null,
+          toast: null,
+        },
+        files: this.files,
+      };
+
+      const serialized = serializeAsJSON(
+        sceneData.elements,
+        sceneData.appState,
+        sceneData.files,
+        "local"
+      );
+
+      // Load existing versions
+      const existingVersions = JSON.parse(
+        localStorage.getItem(this.EDIT_HISTORY_KEY) || "[]"
+      );
+
+      // Check if we've reached the limit
+      if (existingVersions.length >= this.MAX_VERSIONS) {
+        this.setToast({
+          message: `Edit history limit reached (${this.MAX_VERSIONS} versions). Please delete some older versions to continue saving.`,
+          closable: true,
+          duration: 8000,
+        });
+        return false;
+      }
+
+      // Create new snapshot version (not current version)
+      const newVersion = {
+        id: Date.now().toString(),
+        name: customName || `${this.state.name || "Untitled"} - ${new Date().toLocaleString()}`,
+        timestamp: Date.now(),
+        data: serialized,
+        isCurrentVersion: false, // This is a snapshot, not current working version
+      };
+
+      // Add to beginning of array (newest first)
+      const updatedVersions = [newVersion, ...existingVersions];
+
+      // Save to localStorage
+      localStorage.setItem(this.EDIT_HISTORY_KEY, JSON.stringify(updatedVersions));
+
+      console.log("Saved version to history:", newVersion.name);
+      return true;
+    } catch (error) {
+      console.error("Error saving version to history:", error);
+      return false;
+    }
+  };
+
+  private scheduleAutoSave = () => {
+    // Clear existing timeout
+    if (this.autoSaveTimeout) {
+      clearTimeout(this.autoSaveTimeout);
+    }
+
+    // Schedule new auto-save of current document
+    this.autoSaveTimeout = setTimeout(() => {
+      this.autoSaveCurrentDocument();
+    }, this.AUTO_SAVE_DELAY);
   };
 
   private onTouchEnd = (event: TouchEvent) => {
@@ -3357,6 +3623,7 @@ class App extends React.Component<AppProps, AppState> {
     },
   );
 
+
   // Input handling
   private onKeyDown = withBatchedUpdates(
     (event: React.KeyboardEvent | KeyboardEvent) => {
@@ -3391,13 +3658,23 @@ class App extends React.Component<AppProps, AppState> {
         !event.shiftKey &&
         !event.altKey
       ) {
-        this.setToast({
-          message: t("commandPalette.shortcutHint", {
-            shortcut: getShortcutFromShortcutName("commandPalette"),
-          }),
-        });
-        event.preventDefault();
-        return;
+        // Check if Create New action is available first
+        const createNewAction = this.actionManager.actions.createNew;
+        if (createNewAction && this.actionManager.isActionEnabled(createNewAction)) {
+          // Execute Create New
+          event.preventDefault();
+          this.actionManager.executeAction(createNewAction);
+          return;
+        } else {
+          // Fallback to command palette hint
+          this.setToast({
+            message: t("commandPalette.shortcutHint", {
+              shortcut: getShortcutFromShortcutName("commandPalette"),
+            }),
+          });
+          event.preventDefault();
+          return;
+        }
       }
 
       if (event[KEYS.CTRL_OR_CMD] && event.key.toLowerCase() === KEYS.V) {

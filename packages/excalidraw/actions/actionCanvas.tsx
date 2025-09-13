@@ -2,6 +2,8 @@ import { ColorPicker } from "../components/ColorPicker/ColorPicker";
 import {
   handIcon,
   MoonIcon,
+  PlusIcon,
+  save,
   SunIcon,
   TrashIcon,
   zoomAreaIcon,
@@ -103,6 +105,124 @@ export const actionClearCanvas = register({
             : appState.activeTool,
       },
       commitToHistory: true,
+    };
+  },
+});
+
+export const actionCreateNew = register({
+  name: "createNew",
+  label: "labels.createNew",
+  paletteName: "Create new",
+  icon: PlusIcon,
+  trackEvent: { category: "canvas" },
+  predicate: (elements, appState, props, app) => {
+    return (
+      !!app.props.UIOptions.canvasActions.clearCanvas &&
+      !appState.viewModeEnabled
+    );
+  },
+  perform: (elements, appState, _, app) => {
+    // Clear image cache
+    app.imageCache.clear();
+    
+    return {
+      elements: elements.map((element) =>
+        newElementWith(element, { isDeleted: true }),
+      ),
+      appState: {
+        ...getDefaultAppState(),
+        files: {},
+        theme: appState.theme,
+        penMode: appState.penMode,
+        penDetected: appState.penDetected,
+        exportBackground: appState.exportBackground,
+        exportEmbedScene: appState.exportEmbedScene,
+        gridSize: appState.gridSize,
+        showStats: appState.showStats,
+        pasteDialog: appState.pasteDialog,
+        // Reset name to untitled
+        name: null,
+        // Reset file handle
+        fileHandle: null,
+        activeTool:
+          appState.activeTool.type === "image"
+            ? { ...appState.activeTool, type: "selection" }
+            : appState.activeTool,
+      },
+      files: {},
+      commitToHistory: true,
+    };
+  },
+  keyTest: (event) =>
+    event.key === KEYS.P && event[KEYS.CTRL_OR_CMD] && !event.shiftKey,
+});
+
+export const actionSaveToHistory = register({
+  name: "saveToHistory",
+  label: "labels.saveToHistory",
+  paletteName: "Save to history",
+  icon: save,
+  trackEvent: { category: "canvas" },
+  predicate: (elements, appState, props, app) => {
+    return elements.length > 0 && !appState.viewModeEnabled;
+  },
+  perform: (elements, appState, _, app) => {
+    // Call the app's saveOrUpdateCurrentVersion method for Cmd+S behavior
+    const result = (app as any).saveOrUpdateCurrentVersion?.();
+    
+    return {
+      appState: result?.success
+        ? {
+            ...appState,
+            toast: {
+              message: result.updated ? "Current version updated" : "Version saved",
+              duration: 3000,
+            },
+          }
+        : {
+            ...appState,
+            toast: {
+              message: "Failed to save version",
+              duration: 3000,
+            },
+          },
+      commitToHistory: false,
+    };
+  },
+  keyTest: (event) =>
+    event.key === KEYS.S && event[KEYS.CTRL_OR_CMD] && !event.shiftKey,
+});
+
+export const actionSaveSnapshot = register({
+  name: "saveSnapshot",
+  label: "labels.saveSnapshot",
+  paletteName: "Save snapshot",
+  icon: save,
+  trackEvent: { category: "canvas" },
+  predicate: (elements, appState, props, app) => {
+    return elements.length > 0 && !appState.viewModeEnabled;
+  },
+  perform: (elements, appState, _, app) => {
+    // Call the app's saveVersionToHistory method to create snapshot
+    const success = (app as any).saveVersionToHistory?.();
+    
+    return {
+      appState: success
+        ? {
+            ...appState,
+            toast: {
+              message: "Snapshot saved to history",
+              duration: 3000,
+            },
+          }
+        : {
+            ...appState,
+            toast: {
+              message: "Failed to save snapshot",
+              duration: 3000,
+            },
+          },
+      commitToHistory: false,
     };
   },
 });
