@@ -122,6 +122,25 @@ export const actionCreateNew = register({
     );
   },
   perform: (elements, appState, _, app) => {
+    // ✨ FIX: Check if collaborating and leave collaboration first
+    if (app.props.isCollaborating) {
+      // Stop collaboration to avoid syncing empty scene to other users
+      if (typeof window !== "undefined" && (window as any).collab) {
+        try {
+          (window as any).collab.stopCollaboration();
+          
+          // Change URL back to non-collaboration mode  
+          const currentUrl = new URL(window.location.href);
+          currentUrl.hash = '';
+          window.history.replaceState({}, '', currentUrl.pathname + currentUrl.search);
+          
+          console.log("🚪 Left collaboration before creating new scene");
+        } catch (error) {
+          console.warn("Failed to stop collaboration:", error);
+        }
+      }
+    }
+    
     // Clear image cache
     app.imageCache.clear();
     
