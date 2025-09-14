@@ -33,6 +33,7 @@ import {
 import { DEFAULT_CANVAS_BACKGROUND_PICKS } from "../colors";
 import { SceneBounds } from "../element/bounds";
 import { setCursor } from "../cursor";
+import { serializeAsJSON } from "../data/json";
 
 export const actionChangeViewBackgroundColor = register({
   name: "changeViewBackgroundColor",
@@ -126,7 +127,6 @@ export const actionCreateNew = register({
     if (app.props.isCollaborating) {
       // Show confirmation dialog to save scene before leaving collaboration
       const shouldSaveScene = window.confirm(
-        t("alerts.collabCreateNewPrompt") || 
         "Do you want to save the current scene to your local files before creating a new one? This will also exit collaboration."
       );
       
@@ -154,23 +154,27 @@ export const actionCreateNew = register({
         // If user wants to save, trigger save before leaving collaboration
         if (shouldSaveScene) {
           try {
-            // Trigger the save to active file action first
-            if (typeof app.scene?.getExportedJSON === 'function') {
-              const sceneData = app.scene.getExportedJSON();
-              const blob = new Blob([JSON.stringify(sceneData, null, 2)], {
-                type: "application/json",
-              });
-              const url = URL.createObjectURL(blob);
-              const link = document.createElement("a");
-              link.href = url;
-              link.download = `excalidraw-${new Date().toISOString().slice(0, 10)}.excalidraw`;
-              document.body.appendChild(link);
-              link.click();
-              document.body.removeChild(link);
-              URL.revokeObjectURL(url);
-              
-              console.log("💾 Scene saved before leaving collaboration");
-            }
+            // Serialize current scene data
+            const serialized = serializeAsJSON(
+              elements,
+              appState,
+              app.files,
+              "local"
+            );
+            
+            const blob = new Blob([serialized], {
+              type: "application/json",
+            });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `excalidraw-collab-${new Date().toISOString().slice(0, 10)}.excalidraw`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            console.log("💾 Scene saved before leaving collaboration");
           } catch (saveError) {
             console.warn("Failed to save scene:", saveError);
             // Continue with leaving collaboration even if save fails
