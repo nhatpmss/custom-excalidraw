@@ -1,5 +1,8 @@
 {
+  "version": 2,
   "public": true,
+  "framework": null,
+  "functions": {},
   "headers": [
     {
       "source": "/(.*)",
@@ -45,7 +48,12 @@
       "destination": "/index.html"
     }
   ],
+  "build": {
+    "env": {
+      "NODE_VERSION": "20"
+    }
+  },
   "outputDirectory": "excalidraw-app/build",
-  "installCommand": "yarn install",
-  "buildCommand": "yarn build"
+  "installCommand": "yarn install --frozen-lockfile",
+  "buildCommand": "./build.sh"
 }
