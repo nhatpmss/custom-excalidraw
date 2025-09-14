@@ -121,13 +121,33 @@ export const actionCreateNew = register({
       !appState.viewModeEnabled
     );
   },
-  perform: (elements, appState, _, app) => {
+  perform: async (elements, appState, _, app) => {
     // ✨ FIX: If collaborating, handle differently to avoid syncing empty scene
     if (app.props.isCollaborating) {
-      // Stop collaboration first
-      if (typeof window !== "undefined" && (window as any).collab) {
-        try {
-          (window as any).collab.stopCollaboration();
+      try {
+        // Try to get collabAPI from jotai store
+        let collabAPI = null;
+        
+        // Try multiple methods to access collab
+        if (typeof window !== "undefined") {
+          // Method 1: Try window.collab (dev/test mode)
+          if ((window as any).collab && typeof (window as any).collab.stopCollaboration === 'function') {
+            collabAPI = (window as any).collab;
+          }
+          // Method 2: Try to get from jotai store if available
+          else if ((window as any).appJotaiStore) {
+            try {
+              const { collabAPIAtom } = await import("../../../excalidraw-app/collab/Collab");
+              collabAPI = (window as any).appJotaiStore.get(collabAPIAtom);
+            } catch (importError) {
+              console.warn("Could not import collabAPIAtom:", importError);
+            }
+          }
+        }
+        
+        // Stop collaboration if we found the API
+        if (collabAPI && typeof collabAPI.stopCollaboration === 'function') {
+          collabAPI.stopCollaboration(false); // false = don't keep remote state
           
           // Change URL back to non-collaboration mode  
           const currentUrl = new URL(window.location.href);
@@ -135,9 +155,12 @@ export const actionCreateNew = register({
           window.history.replaceState({}, '', currentUrl.pathname + currentUrl.search);
           
           console.log("🚪 Left collaboration before creating new scene");
-        } catch (error) {
-          console.warn("Failed to stop collaboration:", error);
+        } else {
+          console.warn("Could not access collaboration API to stop collaboration");
         }
+        
+      } catch (error) {
+        console.warn("Failed to stop collaboration:", error);
       }
       
       // Schedule scene clear after leaving collaboration
