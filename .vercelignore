@@ -19,3 +19,8 @@ examples/
 docker-compose*.yml
 Dockerfile
 nginx.conf
+
+# Next.js examples that might confuse Vercel
+**/with-nextjs/
+**/next.config.js
+**/.next/
