@@ -1,20 +1,11 @@
 {
+  "buildCommand": "yarn vercel-build",
+  "outputDirectory": "excalidraw-app/build",
+  "framework": null,
   "rewrites": [
-    { "source": "/((?!api/.*).*)", "destination": "/index.html" }
-  ],
-  "headers": [
     {
       "source": "/(.*)",
-      "headers": [
-        {
-          "key": "X-Content-Type-Options",
-          "value": "nosniff"
-        },
-        {
-          "key": "Referrer-Policy",
-          "value": "origin"
-        }
-      ]
+      "destination": "/index.html"
     }
   ]
 }
