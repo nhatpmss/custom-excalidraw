@@ -148,7 +148,7 @@ export const actionCreateNew = register({
         
         // Apply scene changes directly without going through action system
         app.scene.replaceAllElements([]);
-        app.setState({
+        (app as any).setState({
           ...getDefaultAppState(),
           files: {},
           theme: appState.theme,
@@ -168,7 +168,7 @@ export const actionCreateNew = register({
         });
         
         // Force re-render
-        app.forceUpdate();
+        (app as any).forceUpdate();
       }, 100); // Small delay to ensure collaboration is stopped
       
       // Return false to prevent normal action processing
