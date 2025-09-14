@@ -150,6 +150,14 @@
     text-align: center;
   }
 
+  .welcome-screen-center__credit {
+    font-size: 0.875rem;
+    text-align: center;
+    opacity: 0.7;
+    font-style: italic;
+    margin-top: -1rem;
+  }
+
   .welcome-screen-menu {
     display: flex;
     flex-direction: column;

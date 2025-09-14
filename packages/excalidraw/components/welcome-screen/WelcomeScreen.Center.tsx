@@ -95,6 +95,7 @@ const Center = ({ children }: { children?: React.ReactNode }) => {
           <>
             <Logo />
             <Heading>{t("welcomeScreen.defaults.center_heading")}</Heading>
+            <Credit>Composed by Minh Nhat Pham</Credit>
             <Menu>
               <MenuItemLoadScene />
               <MenuItemHelp />
@@ -124,6 +125,15 @@ const Heading = ({ children }: { children: React.ReactNode }) => {
   );
 };
 Heading.displayName = "Heading";
+
+const Credit = ({ children }: { children: React.ReactNode }) => {
+  return (
+    <div className="welcome-screen-center__credit virgil">
+      {children}
+    </div>
+  );
+};
+Credit.displayName = "Credit";
 
 const Menu = ({ children }: { children?: React.ReactNode }) => {
   return <div className="welcome-screen-menu">{children}</div>;
@@ -184,6 +194,7 @@ MenuItemLiveCollaborationTrigger.displayName =
 
 Center.Logo = Logo;
 Center.Heading = Heading;
+Center.Credit = Credit;
 Center.Menu = Menu;
 Center.MenuItem = WelcomeScreenMenuItem;
 Center.MenuItemLink = WelcomeScreenMenuItemLink;
