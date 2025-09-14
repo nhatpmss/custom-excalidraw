@@ -122,9 +122,9 @@ export const actionCreateNew = register({
     );
   },
   perform: (elements, appState, _, app) => {
-    // ✨ FIX: Check if collaborating and leave collaboration first
+    // ✨ FIX: If collaborating, handle differently to avoid syncing empty scene
     if (app.props.isCollaborating) {
-      // Stop collaboration to avoid syncing empty scene to other users
+      // Stop collaboration first
       if (typeof window !== "undefined" && (window as any).collab) {
         try {
           (window as any).collab.stopCollaboration();
@@ -139,12 +139,44 @@ export const actionCreateNew = register({
           console.warn("Failed to stop collaboration:", error);
         }
       }
+      
+      // Schedule scene clear after leaving collaboration
+      setTimeout(() => {
+        // Clear the scene locally without triggering sync
+        app.imageCache.clear();
+        (app as any).setCurrentEditingVersion?.(null);
+        
+        // Apply scene changes directly without going through action system
+        app.scene.replaceAllElements([]);
+        app.setState({
+          ...getDefaultAppState(),
+          files: {},
+          theme: appState.theme,
+          penMode: appState.penMode,
+          penDetected: appState.penDetected,
+          exportBackground: appState.exportBackground,
+          exportEmbedScene: appState.exportEmbedScene,
+          gridSize: appState.gridSize,
+          showStats: appState.showStats,
+          pasteDialog: appState.pasteDialog,
+          name: null,
+          fileHandle: null,
+          activeTool:
+            appState.activeTool.type === "image"
+              ? { ...appState.activeTool, type: "selection" }
+              : appState.activeTool,
+        });
+        
+        // Force re-render
+        app.forceUpdate();
+      }, 100); // Small delay to ensure collaboration is stopped
+      
+      // Return false to prevent normal action processing
+      return false;
     }
     
-    // Clear image cache
+    // Normal flow for non-collaboration mode
     app.imageCache.clear();
-    
-    // Reset current editing version so next Cmd+S creates new version
     (app as any).setCurrentEditingVersion?.(null);
     
     return {
