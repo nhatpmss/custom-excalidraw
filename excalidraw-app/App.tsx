@@ -299,7 +299,7 @@ export const appLangCodeAtom = atom(
 const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [langCode, setLangCode] = useAtom(appLangCodeAtom);
-  const isCollabDisabled = isRunningInIframe();
+  const isCollabDisabled = !import.meta.env.VITE_APP_WS_SERVER_URL; // Enable if WebSocket URL is set
 
   // initial state
   // ---------------------------------------------------------------------------
