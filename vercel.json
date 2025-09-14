@@ -30,19 +30,25 @@
     {
       "source": "/webex/:match*",
       "destination": "https://for-webex.excalidraw.com"
-    },
-    {
-      "source": "/:path*",
-      "has": [
-        {
-          "type": "host",
-          "value": "vscode.excalidraw.com"
-        }
-      ],
-      "destination": "https://marketplace.visualstudio.com/items?itemName=pomdtr.excalidraw-editor"
     }
   ],
   "rewrites": [
+    {
+      "source": "/assets/(.*)",
+      "destination": "/assets/$1"
+    },
+    {
+      "source": "/fonts/(.*)",
+      "destination": "/fonts/$1"
+    },
+    {
+      "source": "/screenshots/(.*)",
+      "destination": "/screenshots/$1"
+    },
+    {
+      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webmanifest|json))",
+      "destination": "/$1"
+    },
     {
       "source": "/(.*)",
       "destination": "/index.html"
