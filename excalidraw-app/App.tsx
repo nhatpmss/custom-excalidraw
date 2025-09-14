@@ -300,6 +300,10 @@ const ExcalidrawWrapper = () => {
   const [errorMessage, setErrorMessage] = useState("");
   const [langCode, setLangCode] = useAtom(appLangCodeAtom);
   const isCollabDisabled = !import.meta.env.VITE_APP_WS_SERVER_URL; // Enable if WebSocket URL is set
+  
+  // Debug logs
+  console.log("🔧 Debug - WS URL:", import.meta.env.VITE_APP_WS_SERVER_URL);
+  console.log("🔧 Debug - Collab disabled:", isCollabDisabled);
 
   // initial state
   // ---------------------------------------------------------------------------

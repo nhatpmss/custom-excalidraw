@@ -97,14 +97,35 @@ function broadcastToRoom(roomId, event, data, excludeSocketId = null) {
 
 // Socket connection handling
 io.on('connection', (socket) => {
-  console.log(`Socket connected: ${socket.id}`);
+  console.log(`🔌 Socket connected: ${socket.id}`);
+  
+  // Debug: Log all incoming events
+  const originalEmit = socket.emit;
+  socket.emit = function(...args) {
+    console.log(`📤 Server emit:`, args[0], args.slice(1).map(a => typeof a));
+    return originalEmit.apply(this, args);
+  };
+  
+  // Log all incoming events
+  const originalOn = socket.on;
+  socket.on = function(event, handler) {
+    return originalOn.call(this, event, (...args) => {
+      console.log(`📥 Server received:`, event, args.map(a => typeof a === 'object' ? 'Object' : typeof a));
+      return handler(...args);
+    });
+  };
 
-  // Handle room joining
-  socket.on('join-room', (roomId, userInfo = {}) => {
+  // Auto-initialize room on connection
+  socket.emit('init-room');
+
+  // Handle room joining (triggered by client after init-room)
+  socket.on('join-room', (roomId) => {
     try {
+      console.log(`🏠 Socket ${socket.id} joining room: ${roomId}`);
+      
       // Leave previous room if any
       const prevRoomId = userRooms.get(socket.id);
-      if (prevRoomId) {
+      if (prevRoomId && prevRoomId !== roomId) {
         socket.leave(prevRoomId);
         const prevRoom = rooms.get(prevRoomId);
         if (prevRoom) {
@@ -130,85 +151,70 @@ io.on('connection', (socket) => {
       
       room.addUser(socket.id, {
         socketId: socket.id,
-        username: userInfo.username || `User_${socket.id.slice(0, 6)}`,
-        ...userInfo
+        username: `User_${socket.id.slice(0, 6)}`
       });
 
-      // Send current scene to new user
-      if (room.elements.length > 0) {
-        socket.emit('client-broadcast', {
-          data: Buffer.from(JSON.stringify({
-            type: WS_SUBTYPES.INIT,
-            payload: {
-              elements: room.elements
-            }
-          })),
-          iv: new Uint8Array(16) // Dummy IV for now
-        });
-      }
+      // Emit to existing users that new user joined
+      socket.to(roomId).emit('new-user', socket.id);
+      
+      // Send room user list to all users
+      const userList = Array.from(room.users.keys());
+      io.to(roomId).emit('room-user-change', userList);
 
-      // Notify others about new user
-      socket.to(roomId).emit(WS_EVENTS.USER_FOLLOW_ROOM_CHANGE, {
-        type: 'user-joined',
-        user: room.users.get(socket.id)
-      });
-
-      console.log(`Socket ${socket.id} joined room ${roomId}. Room size: ${room.users.size}`);
+      console.log(`✅ Socket ${socket.id} joined room ${roomId}. Room size: ${room.users.size}`);
       
     } catch (error) {
-      console.error('Error joining room:', error);
+      console.error('❌ Error joining room:', error);
       socket.emit('error', { message: 'Failed to join room' });
     }
   });
 
-  // Handle scene updates
-  socket.on('server-broadcast', (encryptedData, iv) => {
-    const roomId = getRoomId(socket);
-    if (!roomId) return;
-
-    const room = rooms.get(roomId);
-    if (!room) return;
-
+  // Handle scene updates - FIXED PROTOCOL
+  socket.on('server-broadcast', (roomId, encryptedBuffer, iv) => {
     try {
-      // For now, we'll pass through encrypted data
-      // In production, you'd decrypt, validate, and re-encrypt
-      const targetSockets = Array.from(room.users.keys()).filter(id => id !== socket.id);
+      console.log(`📡 Scene update from ${socket.id} for room ${roomId}`);
       
-      targetSockets.forEach(socketId => {
-        const targetSocket = io.sockets.sockets.get(socketId);
-        if (targetSocket) {
-          targetSocket.emit('client-broadcast', encryptedData, iv);
-        }
-      });
+      const room = rooms.get(roomId);
+      if (!room || !room.users.has(socket.id)) {
+        console.log(`❌ Room ${roomId} not found or user not in room`);
+        return;
+      }
 
-      console.log(`Scene update broadcast to ${targetSockets.length} users in room ${roomId}`);
-      
-    } catch (error) {
-      console.error('Error broadcasting scene update:', error);
-    }
-  });
-
-  // Handle volatile updates (cursors, etc.)
-  socket.on('server-volatile-broadcast', (encryptedData, iv) => {
-    const roomId = getRoomId(socket);
-    if (!roomId) return;
-
-    const room = rooms.get(roomId);
-    if (!room) return;
-
-    try {
       // Broadcast to all other users in room
       const targetSockets = Array.from(room.users.keys()).filter(id => id !== socket.id);
       
       targetSockets.forEach(socketId => {
         const targetSocket = io.sockets.sockets.get(socketId);
         if (targetSocket) {
-          targetSocket.volatile.emit('client-broadcast', encryptedData, iv);
+          targetSocket.emit('client-broadcast', encryptedBuffer, iv);
+        }
+      });
+
+      console.log(`✅ Scene broadcast to ${targetSockets.length} users in room ${roomId}`);
+      
+    } catch (error) {
+      console.error('❌ Error broadcasting scene update:', error);
+    }
+  });
+
+  // Handle volatile updates (cursors, etc.) - FIXED PROTOCOL  
+  socket.on('server-volatile-broadcast', (roomId, encryptedBuffer, iv) => {
+    try {
+      const room = rooms.get(roomId);
+      if (!room || !room.users.has(socket.id)) return;
+
+      // Broadcast to all other users in room with volatile flag
+      const targetSockets = Array.from(room.users.keys()).filter(id => id !== socket.id);
+      
+      targetSockets.forEach(socketId => {
+        const targetSocket = io.sockets.sockets.get(socketId);
+        if (targetSocket) {
+          targetSocket.volatile.emit('client-broadcast', encryptedBuffer, iv);
         }
       });
       
     } catch (error) {
-      console.error('Error broadcasting volatile update:', error);
+      console.error('❌ Error broadcasting volatile update:', error);
     }
   });
 
@@ -225,7 +231,7 @@ io.on('connection', (socket) => {
 
   // Handle disconnection
   socket.on('disconnect', (reason) => {
-    console.log(`Socket disconnected: ${socket.id}, reason: ${reason}`);
+    console.log(`🔌 Socket disconnected: ${socket.id}, reason: ${reason}`);
     
     const roomId = userRooms.get(socket.id);
     if (roomId) {
@@ -233,15 +239,15 @@ io.on('connection', (socket) => {
       if (room) {
         const isEmpty = room.removeUser(socket.id);
         
-        // Notify others about user leaving
-        socket.to(roomId).emit(WS_EVENTS.USER_FOLLOW_ROOM_CHANGE, {
-          type: 'user-left',
-          socketId: socket.id
-        });
+        // Update user list for remaining users
+        if (!isEmpty) {
+          const userList = Array.from(room.users.keys());
+          io.to(roomId).emit('room-user-change', userList);
+        }
 
         if (isEmpty) {
           rooms.delete(roomId);
-          console.log(`Room ${roomId} deleted (empty)`);
+          console.log(`🗑️ Room ${roomId} deleted (empty)`);
         }
       }
       userRooms.delete(socket.id);
