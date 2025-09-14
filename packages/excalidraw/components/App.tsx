@@ -2641,10 +2641,12 @@ class App extends React.Component<AppProps, AppState> {
         localStorage.getItem(this.EDIT_HISTORY_KEY) || "[]"
       );
 
-      // Find current working version (has isCurrentVersion flag)
-      const currentVersionIndex = existingVersions.findIndex((v: any) => v.isCurrentVersion);
+      // Find current working version based on currentEditingVersionId
+      const currentVersionIndex = this.currentEditingVersionId 
+        ? existingVersions.findIndex((v: any) => v.id === this.currentEditingVersionId)
+        : -1;
       
-      if (currentVersionIndex >= 0) {
+      if (currentVersionIndex >= 0 && this.currentEditingVersionId) {
         // Update existing current version
         const updatedVersion = {
           ...existingVersions[currentVersionIndex],
@@ -2669,6 +2671,12 @@ class App extends React.Component<AppProps, AppState> {
           return { success: false, updated: false };
         }
 
+        // Reset all existing versions to not current (safeguard to ensure only one current version)
+        const resetExistingVersions = existingVersions.map((version: any) => ({
+          ...version,
+          isCurrentVersion: false,
+        }));
+
         const newVersion = {
           id: Date.now().toString(),
           name: this.state.name || "Untitled",
@@ -2678,8 +2686,11 @@ class App extends React.Component<AppProps, AppState> {
         };
 
         // Add to beginning of array (newest first)
-        const updatedVersions = [newVersion, ...existingVersions];
+        const updatedVersions = [newVersion, ...resetExistingVersions];
         localStorage.setItem(this.EDIT_HISTORY_KEY, JSON.stringify(updatedVersions));
+
+        // Set this as the current editing version
+        this.currentEditingVersionId = newVersion.id;
 
         console.log("Created new current version:", newVersion.name);
         return { success: true, updated: false };
@@ -2757,6 +2768,12 @@ class App extends React.Component<AppProps, AppState> {
         return false;
       }
 
+      // Reset all existing versions to not current (fix for bug where multiple versions had isCurrentVersion: true)
+      const resetExistingVersions = existingVersions.map((version: any) => ({
+        ...version,
+        isCurrentVersion: false,
+      }));
+
       // Create new snapshot version (not current version)
       const newVersion = {
         id: Date.now().toString(),
@@ -2767,7 +2784,7 @@ class App extends React.Component<AppProps, AppState> {
       };
 
       // Add to beginning of array (newest first)
-      const updatedVersions = [newVersion, ...existingVersions];
+      const updatedVersions = [newVersion, ...resetExistingVersions];
 
       // Save to localStorage
       localStorage.setItem(this.EDIT_HISTORY_KEY, JSON.stringify(updatedVersions));

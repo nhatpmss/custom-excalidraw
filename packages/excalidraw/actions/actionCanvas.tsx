@@ -125,6 +125,9 @@ export const actionCreateNew = register({
     // Clear image cache
     app.imageCache.clear();
     
+    // Reset current editing version so next Cmd+S creates new version
+    (app as any).setCurrentEditingVersion?.(null);
+    
     return {
       elements: elements.map((element) =>
         newElementWith(element, { isDeleted: true }),
