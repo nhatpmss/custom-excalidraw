@@ -9,7 +9,8 @@ yarn-error.log*
 
 # Development files
 dev-docs/
-scripts/
+scripts/*.js
+!scripts/build-version.js
 *.test.*
 __tests__/
 coverage/
