@@ -78,7 +78,7 @@ git push heroku main
 
 1. Set environment variable in Vercel:
 ```
-VITE_APP_WS_SERVER_URL=wss://your-socket-server.railway.app
+VITE_APP_WS_SERVER_URL=wss://custom-excalidraw-websocket-production.up.railway.app
 ```
 
 2. Enable collaboration in client:
