@@ -46,8 +46,9 @@ VITE_APP_GIT_SHA=<commit-sha>
 
 ### "No Next.js version detected" Error
 - Ensure `"framework": null` is set in `vercel.json`
-- Use custom build command `./build.sh`
+- Use `vercel-build` script in `package.json` instead of custom buildCommand
 - Verify Node.js version is set to 20.x
+- Check `.vercelrc` file exists with proper framework config
 
 ### "Application error" 
 - Check SPA routing configuration in `vercel.json`

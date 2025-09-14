@@ -65,6 +65,7 @@
     "build:version": "node ./scripts/build-version.js",
     "build": "yarn --cwd ./excalidraw-app build",
     "build:vercel": "./build.sh",
+    "vercel-build": "yarn --cwd ./excalidraw-app build && yarn --cwd ./excalidraw-app build:version",
     "fix:code": "yarn test:code --fix",
     "fix:other": "yarn prettier --write",
     "fix": "yarn fix:other && yarn fix:code",

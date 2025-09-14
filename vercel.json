@@ -53,7 +53,5 @@
       "NODE_VERSION": "20"
     }
   },
-  "outputDirectory": "excalidraw-app/build",
-  "installCommand": "yarn install --frozen-lockfile",
-  "buildCommand": "./build.sh"
+  "outputDirectory": "excalidraw-app/build"
 }
