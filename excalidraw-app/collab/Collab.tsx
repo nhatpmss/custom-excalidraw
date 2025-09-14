@@ -479,7 +479,6 @@ class Collab extends PureComponent<CollabProps, CollabState> {
     this.fallbackInitializationHandler = fallbackInitializationHandler;
 
     try {
-      console.log("🚀 Connecting to WebSocket:", import.meta.env.VITE_APP_WS_SERVER_URL);
       this.portal.socket = this.portal.open(
         socketIOClient(import.meta.env.VITE_APP_WS_SERVER_URL, {
           transports: ["websocket", "polling"],
@@ -487,7 +486,6 @@ class Collab extends PureComponent<CollabProps, CollabState> {
         roomId,
         roomKey,
       );
-      console.log("✅ Socket created successfully");
 
       this.portal.socket.once("connect_error", fallbackInitializationHandler);
     } catch (error: any) {
