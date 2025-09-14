@@ -46,6 +46,9 @@ export const AppWelcomeScreen: React.FC<{
         <WelcomeScreen.Center.Heading>
           {headingContent}
         </WelcomeScreen.Center.Heading>
+        <WelcomeScreen.Center.Credit>
+          This version composed by Minh Nhat Pham
+        </WelcomeScreen.Center.Credit>
         <WelcomeScreen.Center.Menu>
           <WelcomeScreen.Center.MenuItemLoadScene />
           <WelcomeScreen.Center.MenuItemHelp />
