@@ -127,8 +127,13 @@ const Heading = ({ children }: { children: React.ReactNode }) => {
 Heading.displayName = "Heading";
 
 const Credit = ({ children }: { children: React.ReactNode }) => {
+  console.log("Credit component rendering:", children);
   return (
-    <div className="welcome-screen-center__credit virgil">
+    <div className="welcome-screen-center__credit virgil" style={{ 
+      backgroundColor: "red", 
+      padding: "10px", 
+      border: "2px solid blue" 
+    }}>
       {children}
     </div>
   );
