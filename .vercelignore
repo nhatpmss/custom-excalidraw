@@ -1,0 +1,21 @@
+# Files to ignore during Vercel deployment
+node_modules
+.git
+.env.local
+.env.*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Development files
+dev-docs/
+scripts/
+*.test.*
+__tests__/
+coverage/
+
+# Examples and docker files
+examples/
+docker-compose*.yml
+Dockerfile
+nginx.conf
