@@ -124,6 +124,12 @@ export const actionCreateNew = register({
   perform: async (elements, appState, _, app) => {
     // ✨ FIX: If collaborating, handle differently to avoid syncing empty scene
     if (app.props.isCollaborating) {
+      // Show confirmation dialog to save scene before leaving collaboration
+      const shouldSaveScene = window.confirm(
+        t("alerts.collabCreateNewPrompt") || 
+        "Do you want to save the current scene to your local files before creating a new one? This will also exit collaboration."
+      );
+      
       try {
         // Try to get collabAPI from jotai store
         let collabAPI = null;
@@ -142,6 +148,32 @@ export const actionCreateNew = register({
             } catch (importError) {
               console.warn("Could not import collabAPIAtom:", importError);
             }
+          }
+        }
+        
+        // If user wants to save, trigger save before leaving collaboration
+        if (shouldSaveScene) {
+          try {
+            // Trigger the save to active file action first
+            if (typeof app.scene?.getExportedJSON === 'function') {
+              const sceneData = app.scene.getExportedJSON();
+              const blob = new Blob([JSON.stringify(sceneData, null, 2)], {
+                type: "application/json",
+              });
+              const url = URL.createObjectURL(blob);
+              const link = document.createElement("a");
+              link.href = url;
+              link.download = `excalidraw-${new Date().toISOString().slice(0, 10)}.excalidraw`;
+              document.body.appendChild(link);
+              link.click();
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+              
+              console.log("💾 Scene saved before leaving collaboration");
+            }
+          } catch (saveError) {
+            console.warn("Failed to save scene:", saveError);
+            // Continue with leaving collaboration even if save fails
           }
         }
         
@@ -192,6 +224,13 @@ export const actionCreateNew = register({
         
         // Force re-render
         (app as any).forceUpdate();
+        
+        // Show success message
+        (app as any).setState({
+          toast: shouldSaveScene 
+            ? { message: "Scene saved and left collaboration", duration: 3000 }
+            : { message: "Left collaboration", duration: 3000 }
+        });
       }, 100); // Small delay to ensure collaboration is stopped
       
       // Return false to prevent normal action processing
