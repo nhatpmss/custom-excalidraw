@@ -1,23 +1,14 @@
 {
-  "version": 2,
-  "public": true,
-  "framework": null,
-  "functions": {},
+  "rewrites": [
+    { "source": "/((?!api/.*).*)", "destination": "/index.html" }
+  ],
   "headers": [
     {
       "source": "/(.*)",
       "headers": [
         {
-          "key": "Access-Control-Allow-Origin",
-          "value": "*"
-        },
-        {
           "key": "X-Content-Type-Options",
           "value": "nosniff"
-        },
-        {
-          "key": "Feature-Policy",
-          "value": "*"
         },
         {
           "key": "Referrer-Policy",
@@ -25,39 +16,5 @@
         }
       ]
     }
-  ],
-  "redirects": [
-    {
-      "source": "/webex/:match*",
-      "destination": "https://for-webex.excalidraw.com"
-    }
-  ],
-  "rewrites": [
-    {
-      "source": "/assets/(.*)",
-      "destination": "/assets/$1"
-    },
-    {
-      "source": "/fonts/(.*)",
-      "destination": "/fonts/$1"
-    },
-    {
-      "source": "/screenshots/(.*)",
-      "destination": "/screenshots/$1"
-    },
-    {
-      "source": "/(.*\\.(js|css|png|jpg|jpeg|gif|ico|svg|woff|woff2|ttf|eot|webmanifest|json))",
-      "destination": "/$1"
-    },
-    {
-      "source": "/(.*)",
-      "destination": "/index.html"
-    }
-  ],
-  "build": {
-    "env": {
-      "NODE_VERSION": "20"
-    }
-  },
-  "outputDirectory": "excalidraw-app/build"
+  ]
 }
